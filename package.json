@@ -1,0 +1,27 @@
+{
+  "name": "secureci",
+  "version": "1.0.0",
+  "description": "SecureCI is an automated DevSecOps pipeline built using Jenkins, Docker, GitHub Webhooks, and industry-standard security tools.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aniiyer-host/SecureCI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/aniiyer-host/SecureCI/issues"
+  },
+  "homepage": "https://github.com/aniiyer-host/SecureCI#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}

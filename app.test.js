@@ -1,3 +1,3 @@
-test("Basic sanity test", () => {
-    expect(2 + 2).toBe(4);
+test("intentional failure", () => {
+    expect(1).toBe(2);
 });

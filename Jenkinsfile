@@ -23,7 +23,11 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t secureci:latest .'
+                sh '''
+                docker build \
+                -t secureci:${BUILD_NUMBER} \
+                -t secureci:latest .
+                '''
             }
         }
 

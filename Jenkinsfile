@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -33,19 +32,32 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-               sh '''
-               mkdir -p reports
+                sh '
+                mkdir -p reports
 
-               trivy image \
-               --severity HIGH,CRITICAL \
-               --format json \
-               --output reports/trivy-report.json \
-               --exit-code 1 \
-               secureci:${BUILD_NUMBER}
-               '''
+                # Generate JSON report
+                trivy image \
+                --severity HIGH,CRITICAL \
+                --format json \
+                --output reports/trivy-report.json \
+                secureci:${BUILD_NUMBER}
+
+                # Generate HTML report
+                trivy image \
+                --severity HIGH,CRITICAL \
+                --format template \
+                --template "@templates/html.tpl" \
+                --output reports/trivy-report.html \
+                secureci:${BUILD_NUMBER}
+
+                # Enforce security policy
+                trivy image \
+                --severity HIGH,CRITICAL \
+                --exit-code 1 \
+                secureci:${BUILD_NUMBER}
+             '
             }
         }
-
     }
 
     post {

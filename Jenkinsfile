@@ -31,5 +31,16 @@ pipeline {
             }
         }
 
+        stage('Trivy Image Scan') {
+            steps {
+                sh '''
+                trivy image \
+                --severity HIGH,CRITICAL \
+                --exit-code 1 \
+                secureci:${BUILD_NUMBER}
+                '''
+            }
+        }
+
     }
 }

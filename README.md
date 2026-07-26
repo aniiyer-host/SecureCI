@@ -14,3 +14,6 @@ The project demonstrates Continuous Integration, Continuous Delivery, and automa
 - OWASP ZAP
 - Trivy
 - Semgrep
+
+## Learnings
+- DevSecOps Pipeline

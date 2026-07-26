@@ -59,11 +59,13 @@ pipeline {
             }
          }
         }
-    }
 
-    post {
+        post {
         always {
             archiveArtifacts artifacts: 'reports/*', fingerprint: true
         }
     }
+}
+
+    
 

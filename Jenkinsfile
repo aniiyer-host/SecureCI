@@ -33,14 +33,24 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-                sh '''
-                trivy image \
-                --severity HIGH,CRITICAL \
-                --exit-code 1 \
-                secureci:${BUILD_NUMBER}
-                '''
+               sh '''
+               mkdir -p reports
+
+               trivy image \
+               --severity HIGH,CRITICAL \
+               --format json \
+               --output reports/trivy-report.json \
+               --exit-code 1 \
+               secureci:${BUILD_NUMBER}
+               '''
             }
         }
 
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'reports/*', fingerprint: true
+        }
     }
 }

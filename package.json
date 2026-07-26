@@ -4,7 +4,8 @@
   "description": "SecureCI is an automated DevSecOps pipeline built using Jenkins, Docker, GitHub Webhooks, and industry-standard security tools.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "test": "jest"
   },
   "repository": {
     "type": "git",

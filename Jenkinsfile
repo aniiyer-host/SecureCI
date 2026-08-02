@@ -18,7 +18,7 @@ pipeline {
             steps {
                 sh '''
                 mkdir -p reports
-                semgrep scan . \
+                /opt/semgrep-venv/bin/semgrep scan . \
                 --json \
                 --output reports/semgrep-report.json
                 '''

@@ -14,6 +14,17 @@ pipeline {
             }
         }
 
+        stage('Semgrep SAST') {
+            steps {
+                sh '''
+                mkdir -p reports
+                semgrep scan . \
+                --json \
+                --output reports/semgrep-report.json
+                '''
+            }
+        }
+
         stage('Run Tests') {
             steps {
                 sh 'npm test'

@@ -73,7 +73,7 @@ pipeline {
               sh '''
               echo "Waiting for application..."
 
-              until curl -fs http://localhost:3000 > /dev/null
+              until curl -fs http://host.docker.internal:3000 > /dev/null
               do
                 sleep 2
               done
@@ -93,7 +93,7 @@ pipeline {
                 -v "$PWD/reports:/zap/wrk" \
                 ghcr.io/zaproxy/zaproxy:stable \
                 zap-baseline.py \
-                -t http://localhost:3000 \
+                -t http://host.docker.internal:3000 \
                 -J zap-report.json \
                 -r zap-report.html
              '''

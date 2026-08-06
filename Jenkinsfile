@@ -85,24 +85,36 @@ pipeline {
 
         stage('DAST - OWASP ZAP') {
             steps {
-              sh '''
-              mkdir -p reports
-              chmod 777 reports
+            sh '''
+        mkdir -p reports
 
-              pwd
-              echo "WORKSPACE=$WORKSPACE"
-              ls -la
+        # Remove any previous scanner container
+        docker rm -f zap-scan || true
 
-              docker run --rm \
-                --network host \
-                -v "$PWD/reports:/zap/wrk" \
-                ghcr.io/zaproxy/zaproxy:stable \
-                zap-baseline.py \
-                -t http://host.docker.internal:3000 \
-                -J zap-report.json \
-                -r zap-report.html
-             '''
-            }
+        # Create the ZAP container
+        docker create \
+          --name zap-scan \
+          --network host \
+          ghcr.io/zaproxy/zaproxy:stable \
+          zap-baseline.py \
+            -t http://host.docker.internal:3000 \
+            -r zap-report.html \
+            -J zap-report.json
+
+        # Run the scan
+        docker start -a zap-scan || true
+
+        # Copy reports back into the Jenkins workspace
+        docker cp zap-scan:/zap/wrk/zap-report.html reports/ || true
+        docker cp zap-scan:/zap/wrk/zap-report.json reports/ || true
+
+        # Optional: copy the generated automation plan
+        docker cp zap-scan:/zap/wrk/zap.yaml reports/ || true
+
+        # Clean up
+        docker rm -f zap-scan || true
+        '''
+         }
         }
 
         stage('Stop Test Container') {
@@ -144,13 +156,14 @@ pipeline {
         }
 
         post {
-        always {
-            sh '''
-            docker rm -f secureci-test || true
-            '''
-            archiveArtifacts artifacts: 'reports/*', fingerprint: true
+            always {
+                sh '''
+                docker rm -f zap-scan || true
+                docker rm -f secureci-test || true
+                '''
+                archiveArtifacts artifacts: 'reports/*', fingerprint: true
+            }
         }
-    }
 }
 
     

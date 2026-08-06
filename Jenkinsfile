@@ -49,8 +49,61 @@ pipeline {
             }
         }
 
+        stage('Start Test Container') {
+            steps {
+                sh '''
+                docker rm -f secureci-test || true
+
+                docker run -d \
+                --name secureci-test \
+                -p 3000:3000 \
+                secureci:latest
+                '''
+            }
+        }
+
+        stage('Wait for Application') {
+            steps {
+              sh '''
+              echo "Waiting for application..."
+
+              until curl -fs http://localhost:3000 > /dev/null
+              do
+                sleep 2
+              done
+
+              echo "Application is ready."
+              '''
+            }
+        }
+
+        stage('OWASP ZAP Baseline') {
+            steps {
+              sh '''
+              mkdir -p reports
+
+              docker run --rm \
+                --network host \
+                -v "$PWD/reports:/zap/wrk" \
+                ghcr.io/zaproxy/zaproxy:stable \
+                zap-baseline.py \
+                -t http://localhost:3000 \
+                -J zap-report.json \
+                -r zap-report.html
+             '''
+            }
+        }
+
+        stage('Stop Test Container') {
+            steps {
+             sh '''
+             docker rm -f secureci-test || true
+             '''
+            }
+        }
+
         stage('Trivy Image Scan') {
-    steps {
+        steps {
         sh '''
         mkdir -p reports
 

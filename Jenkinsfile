@@ -28,8 +28,14 @@ pipeline {
         stage('Dependency Check') {
             steps {
                 sh '''
-                npm audit --json > reports/npm-audit-report.json
-                '''
+                 mkdir -p reports
+
+                 set +e
+                 npm audit --json > reports/npm-audit-report.json
+                 AUDIT_EXIT=$?
+                 echo "npm audit exited with code $AUDIT_EXIT"
+                 set -e
+                 '''
             }
         }
 

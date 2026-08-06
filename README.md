@@ -234,4 +234,4 @@ Each tool provides a different layer of confidence before software is released.
 
 The long-term goal of SecureCI is to evolve into a production-inspired DevSecOps pipeline that combines software quality, application security, supply chain security, and deployment automation into a single continuous delivery workflow.
 
-The emphasis throughout the project is not only on using DevSecOps tools, but on understanding **why each stage exists, what problem it solves, and how the stages work together to improve software security and delivery confidence.**
+The emphasis throughout the project is not only on using DevSecOps tools, but on understanding and implementation **why each stage exists, what problem it solves, and how the stages work together to improve software security and delivery confidence.**

@@ -25,6 +25,14 @@ pipeline {
             }
         }
 
+        stage('Dependency Check') {
+            steps {
+                sh '''
+                npm audit --json > reports/npm-audit-report.json
+                '''
+            }
+        }
+
         stage('Run Tests') {
             steps {
                 sh 'npm test'

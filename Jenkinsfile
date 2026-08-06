@@ -83,10 +83,11 @@ pipeline {
             }
         }
 
-        stage('OWASP ZAP Baseline') {
+        stage('DAST - OWASP ZAP') {
             steps {
               sh '''
               mkdir -p reports
+              chmod 777 reports
 
               docker run --rm \
                 --network host \
@@ -140,6 +141,9 @@ pipeline {
 
         post {
         always {
+            sh '''
+            docker rm -f secureci-test || true
+            '''
             archiveArtifacts artifacts: 'reports/*', fingerprint: true
         }
     }

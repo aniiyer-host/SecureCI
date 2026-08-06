@@ -89,6 +89,10 @@ pipeline {
               mkdir -p reports
               chmod 777 reports
 
+              pwd
+              echo "WORKSPACE=$WORKSPACE"
+              ls -la
+
               docker run --rm \
                 --network host \
                 -v "$PWD/reports:/zap/wrk" \

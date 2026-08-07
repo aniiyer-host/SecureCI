@@ -95,6 +95,7 @@ pipeline {
         docker create \
           --name zap-scan \
           --network secureci-network \
+          -v "$PWD/reports:/zap/wrk" \
           ghcr.io/zaproxy/zaproxy:stable \
           zap-baseline.py \
             -t http://secureci-test:3000 \

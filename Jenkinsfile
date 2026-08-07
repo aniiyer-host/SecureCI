@@ -62,7 +62,7 @@ pipeline {
 
                 docker run -d \
                 --name secureci-test \
-                -p 3000:3000 \
+                --network secureci-network \
                 secureci:latest
                 '''
             }
@@ -73,7 +73,7 @@ pipeline {
               sh '''
               echo "Waiting for application..."
 
-              until curl -fs http://host.docker.internal:3000 > /dev/null
+              until curl -fs http://secureci-test:3000 > /dev/null
               do
                 sleep 2
               done
@@ -94,26 +94,20 @@ pipeline {
         # Create the ZAP container
         docker create \
           --name zap-scan \
-          --network host \
+          --network secureci-network \
           ghcr.io/zaproxy/zaproxy:stable \
           zap-baseline.py \
-            -t http://host.docker.internal:3000 \
+            -t http://secureci-test:3000 \
             -r zap-report.html \
             -J zap-report.json
-        
-        #Debugging now
-        docker run --rm \
-            -v "$PWD/reports:/zap/wrk" \
-            ghcr.io/zaproxy/zaproxy:stable \
-            sh -c '
-            id
-            pwd
-            ls -ld /zap
-            ls -ld /zap/wrk
-            ls -la /zap/wrk
-            stat /zap/wrk         
-            '
+    
 
+        #Verify DNS
+        docker run --rm \
+            --network secureci-network \
+            curlimages/curl \
+            curl http://secureci-test:3000
+        
         # Run the scan
         docker start -a zap-scan || true
 

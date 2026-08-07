@@ -229,6 +229,10 @@ This project demonstrates how different stages of a DevSecOps pipeline answer di
 Each tool provides a different layer of confidence before software is released.
 
 ---
+# Challenges Faced
+* While implementing OWASP DAST normally by running another Docker Image:- In a Docker-outside-of-Docker architecture, bind mounts are resolved by the Docker daemon, not by the container invoking docker run. Paths that exist inside the Jenkins container may not correspond to writable locations from the daemon's perspective. This can result in unexpected ownership and permissions inside downstream containers, even when the invoking container sees different permissions.
+
+---
 
 # Future Vision
 

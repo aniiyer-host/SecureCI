@@ -105,12 +105,13 @@ pipeline {
         docker run --rm \
             -v "$PWD/reports:/zap/wrk" \
             ghcr.io/zaproxy/zaproxy:stable \
-            sh
-
-            touch /zap/wrk/test.html
-            echo hello > /zap/wrk/test.html
-            mv /zap/wrk/test.html /zap/wrk/test2.html
-            cp /etc/hosts /zap/wrk/report.html
+            sh -c '
+             touch /zap/wrk/test.html &&
+             echo hello > /zap/wrk/test.html &&
+             mv /zap/wrk/test.html /zap/wrk/test2.html &&
+             cp /etc/hosts /zap/wrk/report.html &&
+             ls -la /zap/wrk
+            '
 
         # Run the scan
         docker start -a zap-scan || true

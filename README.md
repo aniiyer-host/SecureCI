@@ -233,6 +233,10 @@ Each tool provides a different layer of confidence before software is released.
 * While implementing OWASP DAST normally by running another Docker Image:- In a Docker-outside-of-Docker architecture, bind mounts are resolved by the Docker daemon, not by the container invoking docker run. Paths that exist inside the Jenkins container may not correspond to writable locations from the daemon's perspective. This can result in unexpected ownership and permissions inside downstream containers, even when the invoking container sees different permissions.
 
 ---
+# Known Limitations
+* In a Docker-outside-of-Docker setup on OrbStack/macOS, bind mounts originating from the Jenkins container may be materialized by the host daemon with different ownership than expected. This prevents the ZAP wrapper from writing reports to /zap/wrk, even though the directory is mounted. Networking remains fully functional; the issue is isolated to filesystem ownership during report generation.
+
+---
 
 # Future Vision
 

@@ -2,47 +2,60 @@
 
 > **A hands-on DevSecOps pipeline built to understand how modern CI/CD systems integrate security throughout the software delivery lifecycle.**
 
-SecureCI is an educational DevSecOps project that demonstrates how Continuous Integration can be extended with automated security analysis, artifact generation, and security gates.
+SecureCI is a learning-first DevSecOps project that demonstrates how Continuous Integration can be extended with automated testing, security analysis, container security, artifact generation, and security gates.
 
-Rather than focusing solely on tool usage, this project explores the engineering principles behind CI/CD and DevSecOps by integrating testing, static application security testing (SAST), container vulnerability scanning, and automated reporting into a Jenkins pipeline.
+Rather than treating security tools as black boxes, SecureCI focuses on understanding the engineering principles behind each integration — why the tool exists, what problem it solves, how it interacts with the CI/CD environment, and how security evidence flows toward a release decision.
 
 ---
 
 # Objectives
 
-* Build an end-to-end CI/CD pipeline from scratch
-* Understand how modern DevSecOps pipelines are designed
-* Integrate security as part of the build process rather than after deployment
-* Produce machine-readable and human-readable security evidence
-* Learn the purpose of each tool instead of simply using it
+- Build an end-to-end CI/CD pipeline from scratch
+- Understand how modern DevSecOps pipelines are designed
+- Integrate security directly into the software delivery lifecycle
+- Produce machine-readable and human-readable security evidence
+- Understand the difference between security findings and release policy
+- Learn the infrastructure concepts behind CI/CD tooling rather than simply using tools
 
 ---
 
-# Current Pipeline
+# Current Architecture
 
 ```text
-Developer
-    │
-git push
-    │
-GitHub Webhook
-    │
-Jenkins
-    │
-Checkout Source
-    │
-npm ci
-    │
-Unit Tests (Jest)
-    │
-Docker Build
-    │
-Trivy Container Scan
-    │
-├── JSON Report
-├── HTML Report
-├── Security Gate
-└── Build Artifacts
+                         Developer
+                             │
+                          git push
+                             │
+                    GitHub Webhook
+                             │
+                          Jenkins
+                             │
+                     ┌───────┴───────┐
+                     │               │
+              Install Dependencies  │
+                     │               │
+                ┌────┴────┐          │
+                │         │          │
+              Jest     Semgrep   npm audit
+                │         │          │
+                └────┬────┴──────────┘
+                     │
+                Docker Build
+                     │
+              Start Test Container
+                     │
+              secureci-network
+                ┌────┴────┐
+                │         │
+          Application     ZAP
+                │         │
+                └────┬────┘
+                     │
+                Trivy Scan
+                     │
+              Security Evidence
+                     │
+              Release Decision
 ```
 
 ---
@@ -85,7 +98,8 @@ The pipeline produces both machine-readable and human-readable reports.
 ### Machine Readable
 
 * Trivy JSON Reports
-* *(Upcoming)* Semgrep JSON Reports
+* Semgrep JSON Reports
+* npm audit JSON Reports
 
 Used for:
 
@@ -97,7 +111,6 @@ Used for:
 ### Human Readable
 
 * Trivy HTML Reports
-* *(Upcoming)* Semgrep HTML Reports
 
 Used for:
 
@@ -120,7 +133,7 @@ Used for:
 | Container Security | Trivy                    |
 | Tunneling          | ngrok                    |
 | Registry           | Docker Hub               |
-| Future DAST        | OWASP ZAP                |
+| DAST               | OWASP ZAP                |
 
 ---
 
@@ -191,16 +204,15 @@ SecureCI/
 
 ## In Progress
 
-* Semgrep Integration
-* SAST Report Generation
-* SAST Security Gates
-* Jenkins Integration for Semgrep
+* Refinement of ZAP report generation
+* Improved DAST integration
+* Security policy separation from individual scanning tools
 
 ---
 
 ## Planned
 
-* OWASP ZAP (DAST)
+* ZAP REST API integration
 * SBOM Generation
 * Docker Image Signing
 * Supply Chain Security

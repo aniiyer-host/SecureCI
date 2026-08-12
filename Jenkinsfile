@@ -57,14 +57,15 @@ pipeline {
 
         stage('Start Test Container') {
             steps {
-                sh '''
-                docker rm -f secureci-test || true
+            sh '''
+            docker rm -f secureci-test || true
 
-                docker run -d \
-                --name secureci-test \
-                --network secureci-network \
-                secureci:latest
-                '''
+            docker run -d \
+            --name secureci-test \
+            --network secureci-network \
+            -p 3000:3000 \
+            secureci:latest
+            '''
             }
         }
 

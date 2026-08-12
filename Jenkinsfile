@@ -101,7 +101,19 @@ pipeline {
           -config 'api.addrs.addr.regex=true'
 
         echo "Waiting for ZAP..."
-        sleep 5
+        for i in $(seq 1 30); do
+    if docker run --rm \
+        --network secureci-network \
+        curlimages/curl \
+        curl -sf "http://zap-scan:8080/JSON/core/view/version/"
+    then
+        echo "ZAP API is ready."
+        break
+    fi
+
+    echo "ZAP not ready yet... attempt $i/30"
+    sleep 2
+done
 
         echo "=== Testing ZAP API ==="
         docker run --rm \

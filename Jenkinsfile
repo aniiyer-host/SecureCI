@@ -23,29 +23,10 @@ pipeline {
         --json \
         --output reports/semgrep-report.json
 
-        echo "=== Semgrep severity locations ==="
-        grep -n '"severity"' reports/semgrep-report.json
-
-        echo "=== First result structure ==="
-        python3 - <<'PY'
-import json
-
-with open("reports/semgrep-report.json") as f:
-    data = json.load(f)
-
-result = data["results"][0]
-
-print(json.dumps(result, indent=2))
-PY
-
         echo "=== Normalizing Semgrep findings ==="
-
         rm -f normalized-sast-findings.json
-
         python3 scripts/semgrep_parser.py
-
         echo "=== Generated file ==="
-        cat normalized-sast-findings.json
     '''
 
     archiveArtifacts artifacts: 'normalized-sast-findings.json', fingerprint: true

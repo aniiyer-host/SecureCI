@@ -87,7 +87,7 @@ pipeline {
         stage('DAST - OWASP ZAP') {
     when {
         expression {
-            return true
+            return env.BUILD_NUMBER.toInteger() % 10 == 0
         }
     }
 
@@ -299,6 +299,7 @@ pipeline {
         echo
         echo "=== DAST completed successfully ==="
         '''
+        archiveArtifacts artifacts: 'zap-alerts.json', fingerprint: true
     }
 }
 

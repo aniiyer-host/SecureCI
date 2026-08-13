@@ -16,24 +16,40 @@ pipeline {
 
         stage('Semgrep SAST') {
             steps {
-                sh '''
-                mkdir -p reports
+    sh '''
+        mkdir -p reports
 
-               /opt/semgrep-venv/bin/semgrep scan . \
-               --json \
-               --output reports/semgrep-report.json
+        /opt/semgrep-venv/bin/semgrep scan . \
+        --json \
+        --output reports/semgrep-report.json
 
-               echo "=== Normalizing Semgrep findings ==="
+        echo "=== Semgrep severity locations ==="
+        grep -n '"severity"' reports/semgrep-report.json
 
-               rm -f normalized-sast-findings.json
+        echo "=== First result structure ==="
+        python3 - <<'PY'
+import json
 
-               python3 scripts/semgrep_parser.py
+with open("reports/semgrep-report.json") as f:
+    data = json.load(f)
 
-               echo "=== Generated file ==="
-               cat normalized-sast-findings.json
-               '''
-                archiveArtifacts artifacts: 'normalized-sast-findings.json', fingerprint: true
-            }
+result = data["results"][0]
+
+print(json.dumps(result, indent=2))
+PY
+
+        echo "=== Normalizing Semgrep findings ==="
+
+        rm -f normalized-sast-findings.json
+
+        python3 scripts/semgrep_parser.py
+
+        echo "=== Generated file ==="
+        cat normalized-sast-findings.json
+    '''
+
+    archiveArtifacts artifacts: 'normalized-sast-findings.json', fingerprint: true
+}
         }
 
         stage('Dependency Check') {

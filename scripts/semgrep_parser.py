@@ -45,6 +45,7 @@ for result in data.get("results", []):
     start = result.get("start", {})
     end = result.get("end", {})
 
+    print("DEBUG severity:", repr(result.get("severity")))
     finding = {
         "source": "Semgrep",
         "type": "SAST",

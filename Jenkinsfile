@@ -87,7 +87,8 @@ pipeline {
         stage('DAST - OWASP ZAP') {
     when {
         expression {
-            return env.BUILD_NUMBER.toInteger() % 10 == 0
+            return true
+            // return env.BUILD_NUMBER.toInteger() % 10 == 0
         }
     }
 

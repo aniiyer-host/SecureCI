@@ -295,12 +295,20 @@ pipeline {
 
         echo "ZAP alerts saved to zap-alerts.json"
 
-        cat zap-alerts.json
+        echo "=== Normalizing ZAP findings ==="
+
+        python3 scripts/parse_zap.py
+
+        echo "=== Normalized findings ==="
+
+        cat normalized-findings.json
 
         echo
         echo "=== DAST completed successfully ==="
         '''
         archiveArtifacts artifacts: 'zap-alerts.json', fingerprint: true
+        archiveArtifacts artifacts: 'normalized-findings.json', fingerprint: true
+
     }
 }
 

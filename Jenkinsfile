@@ -297,7 +297,7 @@ pipeline {
 
         echo "=== Normalizing ZAP findings ==="
 
-        python3 scripts/parse_zap.py
+        python3 scripts/zap_parser.py
 
         echo "=== Normalized findings ==="
 

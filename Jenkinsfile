@@ -18,13 +18,20 @@ pipeline {
             steps {
                 sh '''
                 mkdir -p reports
-                /opt/semgrep-venv/bin/semgrep scan . \
-                --json \
-                --output reports/semgrep-report.json
 
-                echo "=== Normalizing Semgrep findings ==="
-                python3 scripts/semgrep_parser.py
-                '''
+               /opt/semgrep-venv/bin/semgrep scan . \
+               --json \
+               --output reports/semgrep-report.json
+
+               echo "=== Normalizing Semgrep findings ==="
+
+               rm -f normalized-sast-findings.json
+
+               python3 scripts/parse_semgrep.py
+
+               echo "=== Generated file ==="
+               cat normalized-sast-findings.json
+               '''
                 archiveArtifacts artifacts: 'normalized-sast-findings.json', fingerprint: true
             }
         }

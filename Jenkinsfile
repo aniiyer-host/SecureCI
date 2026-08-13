@@ -27,7 +27,7 @@ pipeline {
 
                rm -f normalized-sast-findings.json
 
-               python3 scripts/parse_semgrep.py
+               python3 scripts/semgrep_parser.py
 
                echo "=== Generated file ==="
                cat normalized-sast-findings.json

@@ -27,6 +27,9 @@ def normalize_severity(severity):
         "INFO": "LOW"
     }
 
+    if not severity:
+        return "UNKNOWN"
+
     return mapping.get(severity.upper(), "UNKNOWN")
 
 

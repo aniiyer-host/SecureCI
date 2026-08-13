@@ -45,13 +45,13 @@ for result in data.get("results", []):
     start = result.get("start", {})
     end = result.get("end", {})
 
-    print("DEBUG severity:", repr(result.get("severity")))
+    print("DEBUG severity:", repr(extra.get("severity")))
     finding = {
         "source": "Semgrep",
         "type": "SAST",
         "rule_id": result.get("check_id"),
         "title": extra.get("message"),
-        "severity": normalize_severity(result.get("severity", "")),
+        "severity": normalize_severity(extra.get("severity", "")),
         "confidence": metadata.get("confidence", "UNKNOWN"),
         "cwe": extract_cwe(metadata),
         "affected_files": [

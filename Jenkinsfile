@@ -307,13 +307,13 @@ pipeline {
         python3 scripts/zap_parser.py
 
         echo "=== Normalized findings ==="
-        cat normalized-findings.json
+        cat normalized-dast-findings.json
 
         echo
         echo "=== DAST completed successfully ==="
         '''
         archiveArtifacts artifacts: 'zap-alerts.json', fingerprint: true
-        archiveArtifacts artifacts: 'normalized-findings.json', fingerprint: true
+        archiveArtifacts artifacts: 'normalized-dast-findings.json', fingerprint: true
 
     }
 }

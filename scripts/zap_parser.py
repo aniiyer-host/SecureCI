@@ -38,7 +38,7 @@ output = {
     "findings": list(grouped.values())
 }
 
-with open("normalized-findings.json", "w") as f:
+with open("normalized-dast-findings.json", "w") as f:
     json.dump(output, f, indent=2)
 
 print("Normalized findings written.")

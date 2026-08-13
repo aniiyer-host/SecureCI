@@ -132,47 +132,6 @@ done
     }
 }
 
-        // stage('DAST - OWASP ZAP') {
-        //     steps {
-        //     sh '''
-        // mkdir -p reports
-
-        // # Remove any previous scanner container
-        // docker rm -f zap-scan || true
-
-        // # Create the ZAP container
-        // docker create \
-        //   --name zap-scan \
-        //   --network secureci-network \
-        //   -v "$PWD/reports:/zap/wrk" \
-        //   ghcr.io/zaproxy/zaproxy:stable \
-        //   zap-baseline.py \
-        //     -t http://secureci-test:3000 \
-        //     -r zap-report.html \
-        //     -J zap-report.json
-    
-
-        // #Verify DNS
-        // docker run --rm \
-        //     --network secureci-network \
-        //     curlimages/curl \
-        //     curl http://secureci-test:3000
-        
-        // # Run the scan
-        // docker start -a zap-scan || true
-
-        // # Copy reports back into the Jenkins workspace
-        // docker cp zap-scan:/zap/wrk/zap-report.html reports/ || true
-        // docker cp zap-scan:/zap/wrk/zap-report.json reports/ || true
-
-        // # Optional: copy the generated automation plan
-        // docker cp zap-scan:/zap/wrk/zap.yaml reports/ || true
-
-        // # Clean up
-        // docker rm -f zap-scan || true
-        // '''
-        //  }
-        // }
 
         stage('Stop Test Container') {
             steps {

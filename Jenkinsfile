@@ -23,7 +23,7 @@ pipeline {
                 --output reports/semgrep-report.json
 
                 echo "=== Normalizing Semgrep findings ==="
-                python3 scripts/zap_parser.py
+                python3 scripts/semgrep_parser.py
                 '''
                 archiveArtifacts artifacts: 'normalized-sast-findings.json', fingerprint: true
             }
@@ -91,8 +91,8 @@ pipeline {
         stage('DAST - OWASP ZAP') {
     when {
         expression {
-            return true
-            // return env.BUILD_NUMBER.toInteger() % 10 == 0
+            // return true
+            return env.BUILD_NUMBER.toInteger() % 10 == 0
         }
     }
 

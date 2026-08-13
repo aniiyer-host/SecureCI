@@ -21,7 +21,11 @@ pipeline {
                 /opt/semgrep-venv/bin/semgrep scan . \
                 --json \
                 --output reports/semgrep-report.json
+
+                echo "=== Normalizing Semgrep findings ==="
+                python3 scripts/zap_parser.py
                 '''
+                archiveArtifacts artifacts: 'normalized-sast-findings.json', fingerprint: true
             }
         }
 
@@ -296,11 +300,9 @@ pipeline {
         echo "ZAP alerts saved to zap-alerts.json"
 
         echo "=== Normalizing ZAP findings ==="
-
         python3 scripts/zap_parser.py
 
         echo "=== Normalized findings ==="
-
         cat normalized-findings.json
 
         echo

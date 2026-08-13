@@ -84,6 +84,11 @@ pipeline {
             }
         }
         stage('DAST - OWASP ZAP') {
+            when {
+              expression {
+                 return true
+                }
+            }
     steps {
         sh '''
         docker rm -f zap-scan || true

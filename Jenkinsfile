@@ -128,6 +128,11 @@ done
           curl -f "http://zap-scan:8080/JSON/core/action/accessUrl/?url=http://secureci-test:3000/&followRedirects=true"
 
         echo "=== ZAP successfully accessed SecureCI ==="
+
+        echo "=== DAST environment ready for manual testing ==="
+        echo "secureci-test and zap-scan are alive."
+        echo "Sleeping for 5 minutes..."
+        sleep 300
         '''
     }
 }

@@ -40,7 +40,8 @@ pipeline {
         echo "=== Normalizing Semgrep findings ==="
         rm -f reports/normalized/sast-findings.json
         python3 scripts/semgrep_parser.py
-        echo "=== Generated file ==="
+        mv normalized-sast-findings.json reports/normalized/sast-findings.json
+        echo "=== Generated file ===" 
     '''
 
     archiveArtifacts artifacts: 'reports/normalized/sast-findings.json', fingerprint: true
@@ -59,8 +60,9 @@ pipeline {
         rm -f reports/normalized/sca-findings.json
 
         python3 scripts/npm_audit_parser.py
+        mv normalized-sca-findings.json reports/normalized/sca-findings.json
 
-        echo "=== Generated SCA file ==="
+        echo "=== Generated SCA file ===" 
         cat normalized-sca-findings.json
     '''
 
@@ -326,8 +328,9 @@ pipeline {
 
         echo "=== Normalizing ZAP findings ==="
         python3 scripts/zap_parser.py
+        mv normalized-dast-findings.json reports/normalized/dast-findings.json
 
-        echo "=== Normalized findings ==="
+        echo "=== Normalized findings ===" 
         cat reports/normalized/dast-findings.json
 
         echo
@@ -386,8 +389,9 @@ pipeline {
     echo "=== Normalizing SBOM ==="
 
     python3 scripts/syft_parser.py
+    mv normalized-sbom.json reports/normalized/sbom.json
 
-    echo "=== Generated normalized SBOM ==="
+    echo "=== Generated normalized SBOM ===" 
     cat reports/normalized/sbom.json
 '''
 

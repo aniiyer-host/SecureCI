@@ -63,7 +63,6 @@ pipeline {
         mv normalized-sca-findings.json reports/normalized/sca-findings.json
 
         echo "=== Generated SCA file ===" 
-        cat normalized-sca-findings.json
     '''
 
     archiveArtifacts artifacts: 'reports/normalized/sca-findings.json', fingerprint: true
@@ -330,9 +329,6 @@ pipeline {
         python3 scripts/zap_parser.py
         mv normalized-dast-findings.json reports/normalized/dast-findings.json
 
-        echo "=== Normalized findings ===" 
-        cat reports/normalized/dast-findings.json
-
         echo
         echo "=== DAST completed successfully ==="
         '''
@@ -392,7 +388,6 @@ pipeline {
     mv normalized-sbom.json reports/normalized/sbom.json
 
     echo "=== Generated normalized SBOM ===" 
-    cat reports/normalized/sbom.json
 '''
 
 archiveArtifacts artifacts: 'reports/normalized/sbom.json', fingerprint: true

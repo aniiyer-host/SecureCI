@@ -362,6 +362,24 @@ pipeline {
         '''
             }
          }
+
+         stage('SBOM') {
+    steps {
+        sh '''
+            mkdir -p reports
+
+            echo "=== Generating SBOM ==="
+
+            syft dir:. \
+                -o cyclonedx-json=reports/sbom.json
+
+            echo "=== SBOM generated ==="
+            ls -lh reports/sbom.json
+        '''
+
+        archiveArtifacts artifacts: 'reports/sbom.json', fingerprint: true
+    }
+}
         }
 
         post {

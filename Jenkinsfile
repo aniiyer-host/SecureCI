@@ -366,16 +366,20 @@ pipeline {
          stage('SBOM') {
     steps {
         sh '''
-            mkdir -p reports
+    echo "=== Generating SBOM with Syft ==="
 
-            echo "=== Generating SBOM ==="
+    syft secureci-test:latest \
+        -o syft-json=reports/syft-report.json
 
-            syft dir:. \
-                -o cyclonedx-json=reports/sbom.json
+    echo "=== Normalizing SBOM ==="
 
-            echo "=== SBOM generated ==="
-            ls -lh reports/sbom.json
-        '''
+    python3 scripts/syft_parser.py
+
+    echo "=== Generated normalized SBOM ==="
+    cat normalized-sbom.json
+'''
+
+archiveArtifacts artifacts: 'normalized-sbom.json', fingerprint: true
 
         archiveArtifacts artifacts: 'reports/sbom.json', fingerprint: true
     }

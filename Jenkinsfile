@@ -8,6 +8,20 @@ pipeline {
             }
         }
 
+        stage('Prepare Reports') {
+            steps {
+                sh '''
+                mkdir -p reports/raw/semgrep
+                mkdir -p reports/raw/npm-audit
+                mkdir -p reports/raw/zap
+                mkdir -p reports/raw/trivy
+                mkdir -p reports/raw/syft
+
+                mkdir -p reports/normalized
+                '''
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
@@ -17,32 +31,32 @@ pipeline {
         stage('Semgrep SAST') {
             steps {
     sh '''
-        mkdir -p reports
+        mkdir -p reports/raw/semgrep reports/normalized
 
         /opt/semgrep-venv/bin/semgrep scan . \
         --json \
-        --output reports/semgrep-report.json
+        --output reports/raw/semgrep/semgrep-report.json
 
         echo "=== Normalizing Semgrep findings ==="
-        rm -f normalized-sast-findings.json
+        rm -f reports/normalized/sast-findings.json
         python3 scripts/semgrep_parser.py
         echo "=== Generated file ==="
     '''
 
-    archiveArtifacts artifacts: 'normalized-sast-findings.json', fingerprint: true
+    archiveArtifacts artifacts: 'reports/normalized/sast-findings.json', fingerprint: true
 }
         }
 
         stage('Dependency Check') {
             steps {
     sh '''
-        mkdir -p reports
+        mkdir -p reports/raw/npm-audit reports/normalized
 
-        npm audit --json > reports/npm-audit-report.json || true
+        npm audit --json > reports/raw/npm-audit/npm-audit-report.json || true
 
         echo "=== Normalizing npm audit findings ==="
 
-        rm -f normalized-sca-findings.json
+        rm -f reports/normalized/sca-findings.json
 
         python3 scripts/npm_audit_parser.py
 
@@ -50,7 +64,7 @@ pipeline {
         cat normalized-sca-findings.json
     '''
 
-    archiveArtifacts artifacts: 'normalized-sca-findings.json', fingerprint: true
+    archiveArtifacts artifacts: 'reports/normalized/sca-findings.json', fingerprint: true
 }
         }
 
@@ -306,21 +320,21 @@ pipeline {
             curlimages/curl \
             -s \
             "http://zap-scan:8080/JSON/core/view/alerts/?baseurl=http://secureci-test:3000" \
-            > zap-alerts.json
+            > reports/raw/zap/zap-alerts.json
 
-        echo "ZAP alerts saved to zap-alerts.json"
+        echo "ZAP alerts saved to reports/raw/zap/zap-alerts.json"
 
         echo "=== Normalizing ZAP findings ==="
         python3 scripts/zap_parser.py
 
         echo "=== Normalized findings ==="
-        cat normalized-dast-findings.json
+        cat reports/normalized/dast-findings.json
 
         echo
         echo "=== DAST completed successfully ==="
         '''
-        archiveArtifacts artifacts: 'zap-alerts.json', fingerprint: true
-        archiveArtifacts artifacts: 'normalized-dast-findings.json', fingerprint: true
+        archiveArtifacts artifacts: 'reports/raw/zap/zap-alerts.json', fingerprint: true
+        archiveArtifacts artifacts: 'reports/normalized/dast-findings.json', fingerprint: true
 
     }
 }
@@ -337,13 +351,13 @@ pipeline {
         stage('Trivy Image Scan') {
         steps {
         sh '''
-        mkdir -p reports
+        mkdir -p reports/raw/trivy
 
         # Generate JSON report
         trivy image \
           --severity HIGH,CRITICAL \
           --format json \
-          --output reports/trivy-report.json \
+          --output reports/raw/trivy/trivy-report.json \
           secureci:${BUILD_NUMBER}
 
         # Generate HTML report
@@ -351,7 +365,7 @@ pipeline {
           --severity HIGH,CRITICAL \
           --format template \
           --template "@templates/html.tpl" \
-          --output reports/trivy-report.html \
+          --output reports/raw/trivy/trivy-report.html \
           secureci:${BUILD_NUMBER}
 
         # Enforce security policy
@@ -367,19 +381,17 @@ pipeline {
     steps {
         sh '''
     echo "=== Generating SBOM with Syft ==="
-    syft secureci:${BUILD_NUMBER} -o syft-json=reports/syft-report.json
+    syft secureci:${BUILD_NUMBER} -o syft-json=reports/raw/syft/syft-report.json
 
     echo "=== Normalizing SBOM ==="
 
     python3 scripts/syft_parser.py
 
     echo "=== Generated normalized SBOM ==="
-    cat normalized-sbom.json
+    cat reports/normalized/sbom.json
 '''
 
-archiveArtifacts artifacts: 'normalized-sbom.json', fingerprint: true
-
-        archiveArtifacts artifacts: 'reports/sbom.json', fingerprint: true
+archiveArtifacts artifacts: 'reports/normalized/sbom.json', fingerprint: true
     }
 }
         }
@@ -390,7 +402,7 @@ archiveArtifacts artifacts: 'normalized-sbom.json', fingerprint: true
                 docker rm -f zap-scan || true
                 docker rm -f secureci-test || true
                 '''
-                archiveArtifacts artifacts: 'reports/*', fingerprint: true
+                archiveArtifacts artifacts: 'reports/**/*', fingerprint: true
             }
         }
 }

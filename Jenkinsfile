@@ -366,19 +366,8 @@ pipeline {
          stage('SBOM') {
     steps {
         sh '''
-    echo "=== SecureCI images ==="
-    docker images --format "{{.Repository}}:{{.Tag}}" | grep -i secureci || true
-
-    echo "=== Docker images before Syft ==="
-    docker images --format "{{.Repository}}:{{.Tag}}" 
-
-    echo "=== Containers ==="
-    docker ps -a
-
     echo "=== Generating SBOM with Syft ==="
-
-    syft secureci-test:latest \
-        -o syft-json=reports/syft-report.json
+    syft secureci:${BUILD_NUMBER} -o syft-json=reports/syft-report.json
 
     echo "=== Normalizing SBOM ==="
 

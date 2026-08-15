@@ -35,16 +35,23 @@ pipeline {
 
         stage('Dependency Check') {
             steps {
-                sh '''
-                 mkdir -p reports
+    sh '''
+        mkdir -p reports
 
-                 set +e
-                 npm audit --json > reports/npm-audit-report.json
-                 AUDIT_EXIT=$?
-                 echo "npm audit exited with code $AUDIT_EXIT"
-                 set -e
-                 '''
-            }
+        npm audit --json > reports/npm-audit-report.json || true
+
+        echo "=== Normalizing npm audit findings ==="
+
+        rm -f normalized-sca-findings.json
+
+        python3 scripts/npm_audit_parser.py
+
+        echo "=== Generated SCA file ==="
+        cat normalized-sca-findings.json
+    '''
+
+    archiveArtifacts artifacts: 'normalized-sca-findings.json', fingerprint: true
+}
         }
 
         stage('Run Tests') {

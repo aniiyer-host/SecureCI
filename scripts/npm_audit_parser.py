@@ -1,4 +1,5 @@
 import json
+from fingerprint import generate_fingerprint
 
 INPUT_FILE = "reports/npm-audit-report.json"
 OUTPUT_FILE = "normalized-sca-findings.json"
@@ -61,6 +62,13 @@ for package_name, vulnerability in data.get("vulnerabilities", {}).items():
         finding = {
             "source": "npm audit",
             "type": "SCA",
+            "fingerprint": generate_fingerprint(
+                "npm audit",
+                "SCA",
+                package_name,
+                vuln.get("url"),
+                vuln.get("title")
+            ),
             "package": package_name,
             "severity": normalize_severity(
                 vuln.get("severity", vulnerability.get("severity", ""))

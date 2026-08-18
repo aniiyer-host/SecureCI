@@ -1,4 +1,5 @@
 import json
+from fingerprint import generate_fingerprint
 
 with open("zap-alerts.json", "r") as f:
     data = json.load(f)
@@ -14,6 +15,11 @@ for alert in data.get("alerts", []):
         grouped[plugin_id] = {
             "source": "OWASP ZAP",
             "type": "DAST",
+            "fingerprint": generate_fingerprint(
+                "OWASP ZAP",
+                "DAST",
+                plugin_id
+            ),
             "plugin_id": plugin_id,
             "title": alert.get("alert"),
             "severity": alert.get("risk", "").upper(),

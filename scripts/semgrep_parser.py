@@ -1,4 +1,5 @@
 import json
+from fingerprint import generate_fingerprint
 
 INPUT_FILE = "reports/semgrep-report.json"
 OUTPUT_FILE = "normalized-sast-findings.json"
@@ -49,6 +50,13 @@ for result in data.get("results", []):
     finding = {
         "source": "Semgrep",
         "type": "SAST",
+        "fingerprint": generate_fingerprint(
+            "Semgrep",
+            "SAST",
+            result.get("check_id"),
+            result.get("path"),
+            start.get("line")
+        ),
         "rule_id": result.get("check_id"),
         "title": extra.get("message"),
         "severity": normalize_severity(extra.get("severity", "")),

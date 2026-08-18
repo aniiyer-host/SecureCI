@@ -1,7 +1,7 @@
 const { Pool } = require("pg");
 
 const pool = new Pool({
-    host: process.env.DB_HOST || "localhost",
+    host: process.env.DB_HOST || "host.docker.internal",
     port: process.env.DB_PORT || 5432,
     user: process.env.DB_USER || "secureci",
     password: process.env.DB_PASSWORD || "secureci_dev",

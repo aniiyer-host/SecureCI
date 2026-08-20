@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureCI Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin-bottom: 10px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .severity-high { color: #e74c3c; }
+        .severity-medium { color: #f39c12; }
+        .severity-low { color: #27ae60; }
+        .severity-info { color: #3498db; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .build-link {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .build-link:hover {
+            text-decoration: underline;
+        }
+
+        .sbom-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sbom-item:last-child {
+            border-bottom: none;
+        }
+
+        .sbom-name {
+            font-weight: 500;
+        }
+
+        .sbom-count {
+            background: #ecf0f1;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SecureCI Dashboard</h1>
+            <p>Security findings and SBOM overview</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>Latest Build</h2>
+                <div id="latest-build" class="loading">Loading...</div>
+            </div>
+
+            <div class="card">
+                <h2>Findings Summary</h2>
+                <div id="findings-summary" class="loading">Loading...</div>
+            </div>
+
+            <div class="card">
+                <h2>Build History</h2>
+                <div id="build-history" class="loading">Loading...</div>
+            </div>
+
+            <div class="card">
+                <h2>SBOM Components</h2>
+                <div id="sbom-components" class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Findings Details</h2>
+            <div>
+                <label for="build-select">Select Build:</label>
+                <select id="build-select">
+                    <option value="">-- Select a build --</option>
+                </select>
+            </div>
+            <div id="build-findings" class="loading">Select a build to view findings</div>
+        </div>
+    </div>
+
+    <script>
+        // API client functions
+        const api = {
+            getLatestBuild: async () => {
+                const response = await fetch('/api/latest-build');
+                if (!response.ok) throw new Error('Failed to fetch latest build');
+                return response.json();
+            },
+
+            getBuildHistory: async () => {
+                const response = await fetch('/api/build-history');
+                if (!response.ok) throw new Error('Failed to fetch build history');
+                return response.json();
+            },
+
+            getFindingsGrouped: async () => {
+                const response = await fetch('/api/findings/grouped');
+                if (!response.ok) throw new Error('Failed to fetch findings summary');
+                return response.json();
+            },
+
+            getBuildFindings: async (buildNumber) => {
+                const response = await fetch(`/api/build/${buildNumber}/findings`);
+                if (!response.ok) throw new Error('Failed to fetch build findings');
+                return response.json();
+            },
+
+            getBuildSBOM: async (buildNumber) => {
+                const response = await fetch(`/api/build/${buildNumber}/sbom`);
+                if (!response.ok) throw new Error('Failed to fetch SBOM');
+                return response.json();
+            }
+        };
+
+        // DOM elements
+        const elements = {
+            latestBuild: document.getElementById('latest-build'),
+            findingsSummary: document.getElementById('findings-summary'),
+            buildHistory: document.getElementById('build-history'),
+            sbomComponents: document.getElementById('sbom-components'),
+            buildSelect: document.getElementById('build-select'),
+            buildFindings: document.getElementById('build-findings')
+        };
+
+        // Initialize dashboard
+        async function initDashboard() {
+            try {
+                // Load all data in parallel
+                const [
+                    latestBuild,
+                    buildHistory,
+                    findingsSummary,
+                    builds
+                ] = await Promise.all([
+                    api.getLatestBuild().catch(() => null),
+                    api.getBuildHistory().catch(() => []),
+                    api.getFindingsGrouped().catch(() => ({})),
+                    api.getBuildHistory().catch(() => []) // Reuse for build select
+                ]);
+
+                // Populate latest build
+                if (latestBuild) {
+                    elements.latestBuild.innerHTML = `
+                        <div class="stat-item">
+                            <span class="stat-label">Build Number:</span>
+                            <span class="stat-value">${latestBuild.jenkins_build_number}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Status:</span>
+                            <span class="stat-value">${latestBuild.status}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Created:</span>
+                            <span class="stat-value">${new Date(latestBuild.created_at).toLocaleString()}</span>
+                        </div>
+                    `;
+                } else {
+                    elements.latestBuild.innerHTML = '<div class="no-data">No builds found</div>';
+                }
+
+                // Populate findings summary
+                if (findingsSummary && Object.keys(findingsSummary).length > 0) {
+                    let summaryHTML = '';
+
+                    // By source
+                    if (findingsSummary.bySource && findingsSummary.bySource.length > 0) {
+                        summaryHTML += '<h3>By Source:</h3>';
+                        findingsSummary.bySource.forEach(item => {
+                            summaryHTML += `
+                                <div class="stat-item">
+                                    <span class="stat-label">${item.source}:</span>
+                                    <span class="stat-value">${item.count}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // By type
+                    if (findingsSummary.byType && findingsSummary.byType.length > 0) {
+                        summaryHTML += '<h3>By Type:</h3>';
+                        findingsSummary.byType.forEach(item => {
+                            summaryHTML += `
+                                <div class="stat-item">
+                                    <span class="stat-label">${item.type}:</span>
+                                    <span class="stat-value">${item.count}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // By severity
+                    if (findingsSummary.bySeverity && findingsSummary.bySeverity.length > 0) {
+                        summaryHTML += '<h3>By Severity:</h3>';
+                        findingsSummary.bySeverity.forEach(item => {
+                            const severityClass = `severity-${item.severity.toLowerCase()}`;
+                            summaryHTML += `
+                                <div class="stat-item">
+                                    <span class="stat-label">${item.severity}:</span>
+                                    <span class="stat-value ${severityClass}">${item.count}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    elements.findingsSummary.innerHTML = summaryHTML || '<div class="no-data">No findings data</div>';
+                } else {
+                    elements.findingsSummary.innerHTML = '<div class="no-data">No findings data</div>';
+                }
+
+                // Populate build history
+                if (buildHistory && buildHistory.length > 0) {
+                    let historyHTML = '<table><thead><tr><th>Build #</th><th>Status</th><th>Created</th></tr></thead><tbody>';
+                    buildHistory.slice(0, 10).forEach(build => {
+                        historyHTML += `
+                            <tr>
+                                <td>${build.jenkins_build_number}</td>
+                                <td>${build.status}</td>
+                                <td>${new Date(build.created_at).toLocaleString()}</td>
+                            </tr>
+                        `;
+                    });
+                    historyHTML += '</tbody></table>';
+                    elements.buildHistory.innerHTML = historyHTML;
+
+                    // Populate build select dropdown
+                    elements.buildSelect.innerHTML = '<option value="">-- Select a build --</option>';
+                    buildHistory.forEach(build => {
+                        const option = document.createElement('option');
+                        option.value = build.jenkins_build_number;
+                        option.textContent = `Build #${build.jenkins_build_number} (${build.status})`;
+                        elements.buildSelect.appendChild(option);
+                    });
+                } else {
+                    elements.buildHistory.innerHTML = '<div class="no-data">No build history</div>';
+                    elements.buildSelect.innerHTML = '<option value="">-- No builds available --</option>';
+                }
+
+            } catch (error) {
+                console.error('Dashboard initialization error:', error);
+                elements.latestBuild.innerHTML = '<div class="error">Error loading dashboard</div>';
+                elements.findingsSummary.innerHTML = '<div class="error">Error loading dashboard</div>';
+                elements.buildHistory.innerHTML = '<div class="error">Error loading dashboard</div>';
+            }
+        }
+
+        // Handle build selection change
+        elements.buildSelect.addEventListener('change', async () => {
+            const buildNumber = elements.buildSelect.value;
+            if (!buildNumber) {
+                elements.buildFindings.innerHTML = '<div class="loading">Select a build to view findings</div>';
+                return;
+            }
+
+            try {
+                // Show loading state
+                elements.buildFindings.innerHTML = '<div class="loading">Loading findings...</div>';
+
+                // Fetch findings and SBOM in parallel
+                const [findings, sbomData] = await Promise.all([
+                    api.getBuildFindings(buildNumber),
+                    api.getBuildSBOM(buildNumber)
+                ]);
+
+                // Display findings
+                if (findings && findings.length > 0) {
+                    let findingsHTML = `<table><thead><tr><th>Title</th><th>Source</th><th>Type</th><th>Severity</th><th>Confidence</th></tr></thead><tbody>`;
+                    findings.forEach(finding => {
+                        const severityClass = finding.severity ? `severity-${finding.severity.toLowerCase()}` : '';
+                        findingsHTML += `
+                            <tr>
+                                <td>${finding.title || 'No title'}</td>
+                                <td>${finding.source || 'N/A'}</td>
+                                <td>${finding.type || 'N/A'}</td>
+                                <td><span class="${severityClass}">${finding.severity || 'N/A'}</span></td>
+                                <td>${finding.confidence || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                    findingsHTML += '</tbody></table>';
+                    elements.buildFindings.innerHTML = findingsHTML;
+                } else {
+                    elements.buildFindings.innerHTML = '<div class="no-data">No findings for this build</div>';
+                }
+
+                // Display SBOM
+                if (sbomData && sbomData.components && sbomData.components.length > 0) {
+                    let sbomHTML = '<h3>Component Summary:</h3>';
+                    sbomData.components.forEach(comp => {
+                        sbomHTML += `
+                            <div class="sbom-item">
+                                <span class="sbom-name">${comp.name}@${comp.version || 'unknown'}</span>
+                                <span class="sbom-count">${comp.count}</span>
+                            </div>
+                        `;
+                    });
+
+                    sbomHTML += '<h3>Detailed Components:</h3><table><thead><tr><th>Name</th><th>Version</th><th>Type</th><th>PURL</th></tr></thead><tbody>';
+                    sbomData.raw.forEach(comp => {
+                        sbomHTML += `
+                            <tr>
+                                <td>${comp.name}</td>
+                                <td>${comp.version || 'N/A'}</td>
+                                <td>${comp.type || 'N/A'}</td>
+                                <td>${comp.purl || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                    sbomHTML += '</tbody></table>';
+
+                    // Find or create SBOM container
+                    let sbomContainer = document.getElementById('sbom-details');
+                    if (!sbomContainer) {
+                        sbomContainer = document.createElement('div');
+                        sbomContainer.id = 'sbom-details';
+                        elements.sbomComponents.appendChild(sbomContainer);
+                    }
+                    sbomContainer.innerHTML = sbomHTML;
+                } else {
+                    const sbomContainer = document.getElementById('sbom-details');
+                    if (sbomContainer) {
+                        sbomContainer.innerHTML = '<div class="no-data">No SBOM data for this build</div>';
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading build details:', error);
+                elements.buildFindings.innerHTML = '<div class="error">Error loading build details</div>';
+            }
+        });
+
+        // Initialize dashboard on load
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

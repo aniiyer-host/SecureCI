@@ -2,7 +2,7 @@ import json
 from fingerprint import generate_fingerprint
 
 INPUT_FILE = "reports/raw/npm-audit/npm-audit-report.json"
-OUTPUT_FILE = "reports/normalized/normalized-sca-findings.json"
+OUTPUT_FILE = "normalized-sca-findings.json"
 
 
 def normalize_severity(severity):

@@ -1,7 +1,7 @@
 import json
 from fingerprint import generate_fingerprint
 
-with open("zap-alerts.json", "r") as f:
+with open("reports/raw/zap/zap-alerts.json", "r") as f:
     data = json.load(f)
 
 grouped = {}
@@ -44,7 +44,7 @@ output = {
     "findings": list(grouped.values())
 }
 
-with open("normalized-dast-findings.json", "w") as f:
+with open("reports/normalized/normalized-dast-findings.json", "w") as f:
     json.dump(output, f, indent=2)
 
 print("Normalized findings written.")

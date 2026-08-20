@@ -1,7 +1,7 @@
 import json
 
-INPUT_FILE = "reports/syft-report.json"
-OUTPUT_FILE = "normalized-sbom.json"
+INPUT_FILE = "reports/raw/syft/syft-report.json"
+OUTPUT_FILE = "reports/normalized/normalized-sbom.json"
 
 
 with open(INPUT_FILE, "r") as f:

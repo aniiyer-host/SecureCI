@@ -1,8 +1,8 @@
 import json
 from fingerprint import generate_fingerprint
 
-INPUT_FILE = "reports/semgrep-report.json"
-OUTPUT_FILE = "normalized-sast-findings.json"
+INPUT_FILE = "reports/raw/semgrep/semgrep-report.json"
+OUTPUT_FILE = "reports/normalized/normalized-sast-findings.json"
 
 
 def extract_cwe(metadata):

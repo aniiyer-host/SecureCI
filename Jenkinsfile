@@ -11,6 +11,7 @@ pipeline {
         stage('Prepare Reports') {
             steps {
                 sh '''
+                rm -rf reports
                 mkdir -p reports/raw/semgrep
                 mkdir -p reports/raw/npm-audit
                 mkdir -p reports/raw/zap
@@ -393,6 +394,15 @@ pipeline {
 archiveArtifacts artifacts: 'reports/normalized/sbom.json', fingerprint: true
     }
 }
+stage('Import Results') {
+    steps {
+        sh '''
+            node server/importer.js \
+                ${BUILD_NUMBER} \
+                reports/normalized
+        '''
+    }
+}
         }
 
         post {
@@ -401,7 +411,7 @@ archiveArtifacts artifacts: 'reports/normalized/sbom.json', fingerprint: true
                 docker rm -f zap-scan || true
                 docker rm -f secureci-test || true
                 '''
-                archiveArtifacts artifacts: 'reports/**/*', fingerprint: true
+                archiveArtifacts artifacts: 'reports/raw/**/*', fingerprint: true
             }
         }
 }

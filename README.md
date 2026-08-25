@@ -2,7 +2,7 @@
 
 > **A hands-on DevSecOps pipeline built to understand how modern CI/CD systems integrate security throughout the software delivery lifecycle.**
 
-SecureCI is a learning-first DevSecOps project that demonstrates how Continuous Integration can be extended with automated testing, security analysis, container security, artifact generation, and security gates.
+SecureCI is a learning-first DevSecOps project that demonstrates how Continuous Integration can be extended with automated testing, security analysis, container security, artifact generation, and security evidence collection.
 
 Rather than treating security tools as black boxes, SecureCI focuses on understanding the engineering principles behind each integration — why the tool exists, what problem it solves, how it interacts with the CI/CD environment, and how security evidence flows toward a release decision.
 
@@ -61,7 +61,7 @@ In each Jenkins build, SecureCI executes the following stages:
 7. **Build Docker Image** — Creates Docker image tagged with build number
 8. **Start Test Container** — Runs the Docker image in a test network
 9. **Wait for Application** — Waits for the web service to become available
-10. **DAST - OWASP ZAP** — (Every 10th build) Spins up ZAP daemon, performs spidering and active scan against the test container, outputs alerts, then normalizes
+10. **DAST - OWASP ZAP** — (Every 10th build) Spins up ZAP daemon, performs spidering and active scan against the test container, outputs alerts, then normalizes. Builds between DAST runs may not have a DAST report.
 11. **Stop Test Container** — Cleans up test container
 12. **Trivy Image Scan** — Scans the Docker image for OS and dependency vulnerabilities, outputs JSON and HTML reports
 13. **SBOM** — Generates Software Bill of Materials using Syft, outputs JSON report, then normalizes
@@ -91,7 +91,7 @@ Indexes are created on frequently queried columns (build_id, fingerprint, severi
 The SecureCI dashboard provides visibility into security trends and build-specific details:
 
 - **Latest Build** — Shows the most recent build number, status, and timestamp
-- **Findings Summary** — Aggregated counts across all builds grouped by source (Semgrep, npm audit, ZAP, Trivy), type, and severity
+- **Findings Summary** — Aggregated counts across all builds grouped by source, type, and severity, with Semgrep and npm audit currently represented and OWASP ZAP appearing when a DAST run has occurred
 - **Build History** — List of recent builds with status and timestamps (click to select)
 - **SBOM Information** — When a build is selected, shows:
   - SBOM Summary: Total component count, number of component types, and preview of top components
@@ -99,6 +99,18 @@ The SecureCI dashboard provides visibility into security trends and build-specif
   - Toggle between summary and detailed views with "View Full SBOM" button
 
 The dashboard loads data via REST API endpoints and updates dynamically when a different build is selected from the dropdown menu.
+
+
+## Screenshots
+
+![Dashboard](screenshots/dashboard.jpeg)
+*SecureCI Dashboard overview*
+
+![Findings Summary](screenshots/findings_summary.jpeg)
+*Security findings summary*
+
+![SBOM](screenshots/sbom.jpeg)
+*SBOM component overview*
 
 ---
 
@@ -130,7 +142,7 @@ To run SecureCI locally:
 2. **Start PostgreSQL**
    - Ensure PostgreSQL is running and accessible
    - Create a database named `secureci` (or update environment variables)
-   - The schema will be created automatically on first run (see `database/schema.sql`)
+   - Initialize the schema using `database/schema.sql`
 
 3. **Configure environment variables**
    Set these variables in your shell or a `.env` file:

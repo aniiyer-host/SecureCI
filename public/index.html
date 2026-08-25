@@ -158,6 +158,38 @@
             font-style: italic;
         }
 
+        .btn {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background-color: #2c3e50;
+        }
+
+        .btn-primary:hover {
+            background-color: #1a252f;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .sbom-controls {
+            margin-bottom: 15px;
+        }
+
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -410,30 +442,76 @@
                     elements.buildFindings.innerHTML = '<div class="no-data">No findings for this build</div>';
                 }
 
-                // Display SBOM
+                // Display SBOM - Enhanced with summary view
                 if (sbomData && sbomData.components && sbomData.components.length > 0) {
-                    let sbomHTML = '<h3>Component Summary:</h3>';
-                    sbomData.components.forEach(comp => {
-                        sbomHTML += `
-                            <div class="sbom-item">
-                                <span class="sbom-name">${comp.name}@${comp.version || 'unknown'}</span>
-                                <span class="sbom-count">${comp.count}</span>
-                            </div>
-                        `;
+                    // Calculate total component count from raw data
+                    const totalComponents = sbomData.raw.length;
+
+                    // Calculate component type breakdown
+                    const typeCounts = {};
+                    sbomData.raw.forEach(comp => {
+                        const type = comp.type || 'unknown';
+                        typeCounts[type] = (typeCounts[type] || 0) + 1;
                     });
 
-                    sbomHTML += '<h3>Detailed Components:</h3><table><thead><tr><th>Name</th><th>Version</th><th>Type</th><th>PURL</th></tr></thead><tbody>';
-                    sbomData.raw.forEach(comp => {
-                        sbomHTML += `
-                            <tr>
-                                <td>${comp.name}</td>
-                                <td>${comp.version || 'N/A'}</td>
-                                <td>${comp.type || 'N/A'}</td>
-                                <td>${comp.purl || 'N/A'}</td>
-                            </tr>
-                        `;
+                    // Get preview of first 10 components
+                    const previewComponents = sbomData.components.slice(0, 10);
+
+                    let sbomHTML = '';
+                    sbomHTML += '<div class="sbom-summary">';
+                    sbomHTML += '<h3>SBOM Summary</h3>';
+                    sbomHTML += '<div class="stat-item">';
+                    sbomHTML += '<span class="stat-label">Total Components:</span>';
+                    sbomHTML += '<span class="stat-value">' + totalComponents + '</span>';
+                    sbomHTML += '</div>';
+                    sbomHTML += '<div class="stat-item">';
+                    sbomHTML += '<span class="stat-label">Component Types:</span>';
+                    sbomHTML += '<span class="stat-value">' + Object.keys(typeCounts).length + ' types</span>';
+                    sbomHTML += '</div>';
+
+                    // Add type breakdown
+                    Object.entries(typeCounts).forEach(([type, count]) => {
+                        sbomHTML += '<div class="stat-item" style="margin-left: 20px;">';
+                        sbomHTML += '<span class="stat-label">' + type + ':</span>';
+                        sbomHTML += '<span class="stat-value">' + count + '</span>';
+                        sbomHTML += '</div>';
                     });
-                    sbomHTML += '</tbody></table>';
+
+                    sbomHTML += '<div class="sbom-controls" style="margin-top: 15px;">';
+                    sbomHTML += '<button id="view-full-sbom" class="btn">View Full SBOM (' + sbomData.components.length + ' groups)</button>';
+                    sbomHTML += '</div>';
+                    sbomHTML += '<div id="sbom-preview" style="margin-top: 15px;">';
+                    sbomHTML += '<h4>Component Preview:</h4>';
+
+                    previewComponents.forEach(comp => {
+                        sbomHTML += '<div class="sbom-item">';
+                        sbomHTML += '<span class="sbom-name">' + comp.name + '@' + (comp.version || 'unknown') + '</span>';
+                        sbomHTML += '<span class="sbom-count">' + comp.count + '</span>';
+                        sbomHTML += '</div>';
+                    });
+
+                    sbomHTML += '</div>';
+                    sbomHTML += '<div id="sbom-full-view" style="display: none; margin-top: 20px;">';
+                    sbomHTML += '<h3>Detailed Components:</h3>';
+                    sbomHTML += '<div style="margin-bottom: 10px;">';
+                    sbomHTML += '<input type="text" id="sbom-search" placeholder="Search components..." style="padding: 8px; width: 200px; margin-right: 10px;">';
+                    sbomHTML += '<span>Page: <span id="sbom-page-number">1</span> / <span id="sbom-total-pages">1</span></span>';
+                    sbomHTML += '<button id="sbom-prev-page" class="btn" style="margin-left: 10px;">< Prev</button>';
+                    sbomHTML += '<button id="sbom-next-page" class="btn" style="margin-left: 5px;">Next ></button>';
+                    sbomHTML += '<span id="sbom-pagination-info" style="margin-left: 15px;"></span>';
+                    sbomHTML += '</div>';
+                    sbomHTML += '<table id="sbom-full-table">';
+                    sbomHTML += '<thead><tr>';
+                    sbomHTML += '<th>Name</th>';
+                    sbomHTML += '<th>Version</th>';
+                    sbomHTML += '<th>Type</th>';
+                    sbomHTML += '<th>PURL</th>';
+                    sbomHTML += '</tr></thead>';
+                    sbomHTML += '<tbody>';
+                    sbomHTML += '</tbody>';
+                    sbomHTML += '</table>';
+                    sbomHTML += '</div>';
+                    sbomHTML += '</div>';
 
                     // Find or create SBOM container
                     let sbomContainer = document.getElementById('sbom-details');
@@ -443,6 +521,69 @@
                         elements.sbomComponents.appendChild(sbomContainer);
                     }
                     sbomContainer.innerHTML = sbomHTML;
+
+                    // Initialize full SBOM view with pagination and filtering
+                    const fullViewContainer = sbomContainer.querySelector('#sbom-full-view');
+                    if (fullViewContainer) {
+                        fullViewContainer.sbomData = sbomData.raw;
+                        fullViewContainer.searchTerm = '';
+                        fullViewContainer.pageSize = 10;
+                        fullViewContainer.currentPage = 1;
+
+                        // Add event listeners
+                        const viewFullBtn = sbomContainer.querySelector('#view-full-sbom');
+                        const sbomPreview = sbomContainer.querySelector('#sbom-preview');
+                        const sbomFullView = sbomContainer.querySelector('#sbom-full-view');
+
+                        if (viewFullBtn && sbomPreview && sbomFullView) {
+                            viewFullBtn.addEventListener('click', () => {
+                                const isHidden = sbomFullView.style.display === 'none';
+                                sbomFullView.style.display = isHidden ? 'block' : 'none';
+                                sbomPreview.style.display = isHidden ? 'none' : 'block';
+                                viewFullBtn.textContent = isHidden ? 'Hide Full SBOM' : `View Full SBOM (${sbomData.components.length} groups)`;
+
+                                if (isHidden) {
+                                    // Update pagination when showing full view
+                                    updateSBOMTable(fullViewContainer);
+                                }
+                            });
+                        }
+
+                        // Add search and pagination event listeners
+                        const searchInput = sbomContainer.querySelector('#sbom-search');
+                        const prevBtn = sbomContainer.querySelector('#sbom-prev-page');
+                        const nextBtn = sbomContainer.querySelector('#sbom-next-page');
+
+                        if (searchInput) {
+                            searchInput.addEventListener('input', (e) => {
+                                fullViewContainer.searchTerm = e.target.value.toLowerCase();
+                                fullViewContainer.currentPage = 1;
+                                updateSBOMTable(fullViewContainer);
+                            });
+                        }
+
+                        if (prevBtn) {
+                            prevBtn.addEventListener('click', () => {
+                                if (fullViewContainer.currentPage > 1) {
+                                    fullViewContainer.currentPage--;
+                                    updateSBOMTable(fullViewContainer);
+                                }
+                            });
+                        }
+
+                        if (nextBtn) {
+                            nextBtn.addEventListener('click', () => {
+                                // We'll update totalPages dynamically in updateSBOMTable
+                                updateSBOMTable(fullViewContainer); // This will handle disabling next button
+                            });
+                        }
+
+                        // Initialize table header
+                        const tbody = sbomContainer.querySelector('#sbom-full-table tbody');
+                        if (tbody) {
+                            // Initial render will happen when view is shown
+                        }
+                    }
                 } else {
                     const sbomContainer = document.getElementById('sbom-details');
                     if (sbomContainer) {
@@ -455,6 +596,67 @@
                 elements.buildFindings.innerHTML = '<div class="error">Error loading build details</div>';
             }
         });
+
+        // Helper function to update SBOM table with pagination and filtering
+        function updateSBOMTable(container) {
+            const data = container.sbomData;
+            const searchTerm = container.searchTerm;
+            const pageSize = container.pageSize;
+            const currentPage = container.currentPage;
+
+            // Filter data based on search term
+            let filteredData = data;
+            if (searchTerm) {
+                filteredData = data.filter(comp =>
+                    comp.name.toLowerCase().includes(searchTerm) ||
+                    (comp.version && comp.version.toLowerCase().includes(searchTerm)) ||
+                    (comp.type && comp.type.toLowerCase().includes(searchTerm)) ||
+                    (comp.purl && comp.purl.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            // Calculate pagination
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / pageSize);
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, totalItems);
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            // Update pagination info
+            const paginationInfo = container.querySelector('#sbom-pagination-info');
+            if (paginationInfo) {
+                paginationInfo.textContent = `Showing ${startIndex + 1}-${endIndex} of ${totalItems} components`;
+            }
+
+            // Update page number
+            const pageNumber = container.querySelector('#sbom-page-number');
+            if (pageNumber) {
+                pageNumber.textContent = currentPage;
+            }
+
+            // Update prev/next button states
+            const prevBtn = container.querySelector('#sbom-prev-page');
+            const nextBtn = container.querySelector('#sbom-next-page');
+            if (prevBtn) prevBtn.disabled = currentPage === 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+            // Update table body
+            const tbody = container.querySelector('#sbom-full-table tbody');
+            if (tbody) {
+                if (pageData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4">No components match the search</td></tr>`;
+                } else {
+                    tbody.innerHTML = pageData.map(comp => `
+                        <tr>
+                            <td>${comp.name}</td>
+                            <td>${comp.version || 'N/A'}</td>
+                            <td>${comp.type || 'N/A'}</td>
+                            <td>${comp.purl || 'N/A'}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
 
         // Initialize dashboard on load
         document.addEventListener('DOMContentLoaded', initDashboard);

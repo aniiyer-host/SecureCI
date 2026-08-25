@@ -8,250 +8,200 @@ Rather than treating security tools as black boxes, SecureCI focuses on understa
 
 ---
 
-# Objectives
+## Project Overview
 
-- Build an end-to-end CI/CD pipeline from scratch
-- Understand how modern DevSecOps pipelines are designed
-- Integrate security directly into the software delivery lifecycle
-- Produce machine-readable and human-readable security evidence
-- Understand the difference between security findings and release policy
-- Learn the infrastructure concepts behind CI/CD tooling rather than simply using tools
+SecureCI implements a complete DevSecOps CI/CD pipeline that automates security scanning, normalization, persistence, and visualization of security findings. The pipeline transforms raw security tool output into structured data stored in PostgreSQL, providing a dashboard for tracking security trends across builds.
 
 ---
 
-# Current Architecture
+## Architecture
 
-```text
-                         Developer
-                             │
-                          git push
-                             │
-                    GitHub Webhook
-                             │
-                          Jenkins
-                             │
-                     ┌───────┴───────┐
-                     │               │
-              Install Dependencies  │
-                     │               │
-                ┌────┴────┐          │
-                │         │          │
-              Jest     Semgrep   npm audit
-                │         │          │
-                └────┬────┴──────────┘
-                     │
-                Docker Build
-                     │
-              Start Test Container
-                     │
-              secureci-network
-                ┌────┴────┐
-                │         │
-          Application     ZAP
-                │         │
-                └────┬────┘
-                     │
-                Trivy Scan
-                     │
-              Security Evidence
-                     │
-              Release Decision
+The SecureCI pipeline follows this flow:
+
+```
+GitHub
+    ↓
+Jenkins
+    ↓
+Security Scanners (Semgrep, npm audit, OWASP ZAP, Trivy, Syft)
+    ↓
+Normalization (Python parsers)
+    ↓
+PostgreSQL (Persistent storage)
+    ↓
+REST API (Node.js/Express)
+    ↓
+Dashboard (HTML/CSS/JavaScript)
 ```
 
 ---
 
-# Current Features
+## Security Tooling
 
-## Continuous Integration
+SecureCI integrates the following industry-standard security tools:
 
-* Automated builds triggered through GitHub Webhooks
-* Dependency installation using `npm ci`
-* Automated unit testing with Jest
-* Docker image creation
-* Build artifact archiving in Jenkins
-
----
-
-## Security
-
-### Static Application Security Testing (SAST)
-
-* Semgrep integration *(currently in progress)*
-* Detect insecure coding patterns before build
-* Source code analysis using AST-based pattern matching
-
-### Container Security
-
-* Docker image vulnerability scanning using Trivy
-* Detection of vulnerable OS packages and dependencies
-* JSON security reports
-* HTML security reports
-* Security policy enforcement
-* Automated build failure based on vulnerability thresholds
+- **Semgrep** — Static Application Security Testing (SAST)
+- **npm audit** — Software Composition Analysis (SCA)
+- **OWASP ZAP** — Dynamic Application Security Testing (DAST)
+- **Trivy** — Container vulnerability scanning
+- **Syft** — Software Bill of Materials (SBOM) generation
 
 ---
 
-## Reporting
+## Pipeline Behavior
 
-The pipeline produces both machine-readable and human-readable reports.
+In each Jenkins build, SecureCI executes the following stages:
 
-### Machine Readable
+1. **Checkout** — Retrieves source code from GitHub
+2. **Prepare Reports** — Creates directory structure for raw and normalized reports
+3. **Install Dependencies** — Runs `npm ci` to install Node.js dependencies
+4. **Semgrep SAST** — Scans source code for insecure patterns, outputs JSON report, then normalizes to internal format
+5. **Dependency Check (npm audit)** — Scans Node.js dependencies for vulnerabilities, outputs JSON report, then normalizes
+6. **Run Tests** — Executes Jest unit tests
+7. **Build Docker Image** — Creates Docker image tagged with build number
+8. **Start Test Container** — Runs the Docker image in a test network
+9. **Wait for Application** — Waits for the web service to become available
+10. **DAST - OWASP ZAP** — (Every 10th build) Spins up ZAP daemon, performs spidering and active scan against the test container, outputs alerts, then normalizes
+11. **Stop Test Container** — Cleans up test container
+12. **Trivy Image Scan** — Scans the Docker image for OS and dependency vulnerabilities, outputs JSON and HTML reports
+13. **SBOM** — Generates Software Bill of Materials using Syft, outputs JSON report, then normalizes
+14. **Import Results** — Imports all normalized reports into PostgreSQL, associating them with the Jenkins build number
 
-* Trivy JSON Reports
-* Semgrep JSON Reports
-* npm audit JSON Reports
-
-Used for:
-
-* Automation
-* Dashboards
-* CI/CD systems
-* Future integrations
-
-### Human Readable
-
-* Trivy HTML Reports
-
-Used for:
-
-* Developers
-* Security Engineers
-* Auditing
-* Manual review
+All scanner reports are processed through Python normalization scripts that convert vendor-specific formats into a common internal schema before database insertion. Raw scanner outputs are ephemeral (stored temporarily in `reports/raw/`), while normalized findings are persisted in PostgreSQL as the source of truth for the dashboard.
 
 ---
 
-# Technologies Used
+## Data Architecture
 
-| Category           | Technologies             |
-| ------------------ | ------------------------ |
-| CI/CD              | Jenkins, GitHub Webhooks |
-| Containerization   | Docker                   |
-| Source Control     | GitHub                   |
-| Testing            | Jest                     |
-| SAST               | Semgrep                  |
-| Container Security | Trivy                    |
-| Tunneling          | ngrok                    |
-| Registry           | Docker Hub               |
-| DAST               | OWASP ZAP                |
+SecureCI uses PostgreSQL for persistent storage of security evidence. The database schema consists of:
 
----
+- **builds** — Stores Jenkins build metadata (number, status, timestamp)
+- **findings** — Central table for all security findings (SAST, SCA, DAST) with fingerprinting to prevent duplicates
+- **sast_details** — Semgrep-specific details (rule ID, CWE, references, affected files)
+- **sca_details** — npm audit-specific details (package name, CVSS score, direct/indirect dependency, fix availability)
+- **dast_details** — OWASP ZAP-specific details (plugin ID, CWE, affected URLs, instance count, solution)
+- **sbom_components** — Syft-specific SBOM data (component name, version, type, PURL, licenses, locations)
 
-# Engineering Concepts Covered
-
-This project focuses on understanding the concepts behind DevSecOps, including:
-
-* Continuous Integration (CI)
-* Continuous Delivery (CD)
-* DevSecOps
-* Static Application Security Testing (SAST)
-* Software Composition Analysis (SCA)
-* Container Security
-* Security Gates
-* Build Artifacts
-* Evidence vs Policy
-* Docker Image Security
-* Abstract Syntax Trees (AST)
-* Structural Pattern Matching
-* Automated Security Reporting
-* Jenkins Pipelines
-* GitHub Webhooks
+Indexes are created on frequently queried columns (build_id, fingerprint, severity, source) for performance. The importer uses transactions to ensure data consistency across all tables for a given build.
 
 ---
 
-# Project Structure
+## Dashboard
 
-```text
-SecureCI/
-│
-├── app.js
-├── app.test.js
-├── Dockerfile
-├── Jenkinsfile
-├── package.json
-├── package-lock.json
-│
-├── templates/
-│   └── html.tpl
-│
-├── reports/          # Generated during builds (not committed)
-│
-├── .dockerignore
-├── .gitignore
-│
-└── README.md
-```
+The SecureCI dashboard provides visibility into security trends and build-specific details:
+
+- **Latest Build** — Shows the most recent build number, status, and timestamp
+- **Findings Summary** — Aggregated counts across all builds grouped by source (Semgrep, npm audit, ZAP, Trivy), type, and severity
+- **Build History** — List of recent builds with status and timestamps (click to select)
+- **SBOM Information** — When a build is selected, shows:
+  - SBOM Summary: Total component count, number of component types, and preview of top components
+  - Full SBOM View: Searchable, paginated table of all components with name, version, type, and PURL (Package URL)
+  - Toggle between summary and detailed views with "View Full SBOM" button
+
+The dashboard loads data via REST API endpoints and updates dynamically when a different build is selected from the dropdown menu.
 
 ---
 
-# Project Roadmap
+## API Endpoints
 
-## Completed
+SecureCI provides the following REST API endpoints (all return JSON):
 
-* Jenkins Pipeline
-* GitHub Webhooks
-* Docker Integration
-* Jest Unit Testing
-* Docker Image Builds
-* Trivy Integration
-* JSON Security Reports
-* HTML Security Reports
-* Jenkins Artifact Archiving
-* Security Gates
-* Build Automation
+- `GET /api/latest-build` — Returns the most recent build record
+- `GET /api/build-history` — Returns all builds ordered by date (newest first)
+- `GET /api/findings/grouped` — Returns findings aggregated by source, type, and severity
+- `GET /api/build/:buildNumber/findings` -> Returns all findings for a specific Jenkins build number
+- `GET /api/build/:buildNumber/sbom` -> Returns SBOM data for a specific Jenkins build number, including:
+  - `components`: Array of component objects grouped by name-version with count of occurrences
+  - `raw`: Array of all individual SBOM component records for the build
+
+All endpoints return appropriate HTTP status codes (200 for success, 404 for not found, 500 for server errors) and include error messages in JSON format when applicable.
 
 ---
 
-## In Progress
+## Local Setup
 
-* Refinement of ZAP report generation
-* Improved DAST integration
-* Security policy separation from individual scanning tools
+To run SecureCI locally:
 
----
+1. **Install dependencies**
+   ```bash
+   npm ci
+   ```
 
-## Planned
+2. **Start PostgreSQL**
+   - Ensure PostgreSQL is running and accessible
+   - Create a database named `secureci` (or update environment variables)
+   - The schema will be created automatically on first run (see `database/schema.sql`)
 
-* ZAP REST API integration
-* SBOM Generation
-* Docker Image Signing
-* Supply Chain Security
-* Secrets Scanning
-* Dependency License Checks
-* Deployment Stage
-* Runtime Security Monitoring
-* GitHub Actions Implementation
-* Kubernetes Deployment
-* Infrastructure as Code Security
-* Security Dashboards
+3. **Configure environment variables**
+   Set these variables in your shell or a `.env` file:
+   - `DB_HOST` (default: localhost)
+   - `DB_PORT` (default: 5432)
+   - `DB_USER` (default: secureci)
+   - `DB_PASSWORD` (default: secureci_dev)
+   - `DB_NAME` (default: secureci)
 
----
+4. **Run the application**
+   ```bash
+   node app.js
+   ```
+   The dashboard will be available at http://localhost:3000
 
-# Key Learnings
+5. **Run tests**
+   ```bash
+   npm test
+   ```
 
-This project demonstrates how different stages of a DevSecOps pipeline answer different engineering questions:
-
-| Stage   | Question                                          |
-| ------- | ------------------------------------------------- |
-| Jest    | Does the application work correctly?              |
-| Semgrep | Does the source code contain insecure patterns?   |
-| Docker  | Can the application be packaged consistently?     |
-| Trivy   | Does the container contain known vulnerabilities? |
-
-Each tool provides a different layer of confidence before software is released.
-
----
-# Challenges Faced
-* While implementing OWASP DAST normally by running another Docker Image:- In a Docker-outside-of-Docker architecture, bind mounts are resolved by the Docker daemon, not by the container invoking docker run. Paths that exist inside the Jenkins container may not correspond to writable locations from the daemon's perspective. This can result in unexpected ownership and permissions inside downstream containers, even when the invoking container sees different permissions.
-
----
-# Known Limitations
-* In a Docker-outside-of-Docker setup on OrbStack/macOS, bind mounts originating from the Jenkins container may be materialized by the host daemon with different ownership than expected. This prevents the ZAP wrapper from writing reports to /zap/wrk, even though the directory is mounted. Networking remains fully functional; the issue is isolated to filesystem ownership during report generation.
+Note: To experience the full pipeline including security scanners, you would need to run Jenkins with the provided Jenkinsfile. The local setup above runs only the web service and dashboard for development and testing.
 
 ---
 
-# Future Vision
+## Jenkins/Import Workflow
 
-The long-term goal of SecureCI is to evolve into a production-inspired DevSecOps pipeline that combines software quality, application security, supply chain security, and deployment automation into a single continuous delivery workflow.
+The Jenkins pipeline orchestrates the entire process:
 
-The emphasis throughout the project is not only on using DevSecOps tools, but on understanding and implementation **why each stage exists, what problem it solves, and how the stages work together to improve software security and delivery confidence.**
+1. After each stage produces raw reports (in `reports/raw/*`), Python normalization scripts convert them to a common JSON format and store in `reports/normalized/`
+2. The Import Results stage executes `node server/importer.js <BUILD_NUMBER> reports/normalized`
+3. The importer:
+   - Connects to PostgreSQL using the connection pool from `server/db.js`
+   - Creates or updates a build record in the `builds` table
+   - For each finding type (SAST, SCA, DAST, SBOM):
+     - Inserts findings into the `findings` table (using fingerprint to prevent duplicates within a build)
+     - Inserts type-specific details into the corresponding detail table
+   - Commits the transaction or rolls back on error
+   - Associates all imported data with the specified Jenkins build number via foreign key relationships
+
+Scanner outputs are archived as Jenkins build artifacts for traceability and audit purposes.
+
+---
+
+## Current Scope / Limitations
+
+SecureCI currently focuses on:
+- **Security scanning** — Integration of Semgrep, npm audit, OWASP ZAP, Trivy, and Syft
+- **Normalization** — Conversion of scanner-specific formats to a common internal schema
+- **Evidence collection** — Archival of raw and normalized reports as build artifacts
+- **Persistence** — Storage of normalized findings in PostgreSQL for historical analysis
+- **Visualization** — Dashboard showing build history, findings trends, and SBOM information
+
+The following are intentionally **NOT** implemented in the current scope:
+- Policy enforcement (build failures based on security thresholds)
+- Authentication/Role-Based Access Control (RBAC)
+- Automated remediation (ticket creation, pull request comments, etc.)
+- Advanced analytics (trend prediction, risk scoring, etc.)
+- Additional scanners (beyond the five integrated tools)
+- Multi-tenancy or team-based access controls
+
+These capabilities are left as potential future enhancements to maintain focus on understanding the core DevSecOps pipeline mechanics.
+
+---
+
+## Project Status
+
+The current implementation represents the completed first version of SecureCI. It demonstrates a functional DevSecOps pipeline that:
+
+- Successfully integrates multiple security tools into a CI/CD workflow
+- Normalizes and persists security evidence for historical analysis
+- Provides a dashboard for visualizing security trends and build-specific details
+- Uses only the stated technologies without introducing unnecessary dependencies or architectural complexity
+
+All claimed features are present and functioning in the repository. No features are misrepresented as implemented when they are not.

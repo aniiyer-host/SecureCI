@@ -418,7 +418,7 @@ stage('Import Results') {
             )
         ]) {
             withEnv([
-                'DB_HOST=host.docker.internal',
+                'DB_HOST=secureci-postgres',
                 'DB_PORT=5432',
                 'DB_NAME=secureci'
             ]) {

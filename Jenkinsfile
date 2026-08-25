@@ -70,11 +70,25 @@ pipeline {
 }
         }
 
-        stage('Run Tests') {
-            steps {
+stage('Run Tests') {
+    steps {
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'secureci-postgres',
+                usernameVariable: 'DB_USER',
+                passwordVariable: 'DB_PASSWORD'
+            )
+        ]) {
+            withEnv([
+                'DB_HOST=secureci-postgres',
+                'DB_PORT=5432',
+                'DB_NAME=secureci'
+            ]) {
                 sh 'npm test'
             }
         }
+    }
+}
 
         stage('Build Docker Image') {
             steps {

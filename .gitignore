@@ -2,3 +2,4 @@ node_modules
 *.json
 testing.txt
 .env
+recovery.txt

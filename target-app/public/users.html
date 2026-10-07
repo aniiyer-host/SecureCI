@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users - Employee Portal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Employee Task Management Portal</h1>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/dashboard">Dashboard</a></li>
+                    <li><a href="/tasks">Tasks</a></li>
+                    <li><a href="/users">Users</a></li>
+                    <li><a href="/profile">Profile</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <h2>Employee Directory</h2>
+            <div class="user-form">
+                <h3>Search Employees</h3>
+                <input type="text" id="user-search" placeholder="Search by name, email, or department...">
+                <button id="search-btn" class="btn">Search</button>
+            </div>
+
+            <h3>Employee List</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-list">
+                    <tr>
+                        <td colspan="6">Loading users...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 SecureCI Target Application</p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

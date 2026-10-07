@@ -132,8 +132,8 @@ stage('Run Tests') {
         stage('DAST - OWASP ZAP') {
     when {
         expression {
-            // return true
-            return env.BUILD_NUMBER.toInteger() % 10 == 0
+            return true
+            //return env.BUILD_NUMBER.toInteger() % 10 == 0
         }
     }
 

@@ -132,8 +132,8 @@ stage('Run Tests') {
         stage('DAST - OWASP ZAP') {
     when {
         expression {
-            return true
-            // return env.BUILD_NUMBER.toInteger() % 10 == 0
+            // return true
+            return env.BUILD_NUMBER.toInteger() % 10 == 0
         }
     }
 
@@ -383,10 +383,10 @@ stage('Run Tests') {
           secureci:${BUILD_NUMBER}
 
         # Enforce security policy
-        #trivy image \
-        #  --severity HIGH,CRITICAL \
-        #  --exit-code 1 \
-        #  secureci:${BUILD_NUMBER}
+        trivy image \
+          --severity HIGH,CRITICAL \
+          --exit-code 1 \
+          secureci:${BUILD_NUMBER}
         '''
             }
          }
